@@ -4,18 +4,48 @@ import numpy as np
 
 from scipy import special
 
-from ._solver import BaseSolver
+from ._base_solver import BaseSolver
+from ._radial_pormed import RadPorMed
+
 from ._result import Result
 
-class Transient(BaseSolver):
-    """Line source solution based on exponential integral."""
+class Transient(RadPorMed,BaseSolver):
+    """
+    Transient solution of the diffusivity equation in radial coordinates using 
+    the line source solution based on the exponential integral.
+
+    Inherits from:
+        RadPorMed: Provides radial porous media properties.
+        BaseSolver: Handles base solver configurations and behaviors.
+
+    """
 
     def __init__(self,*args,**kwargs):
+        """
+        Initializes the Transient solver by invoking the initializers of 
+        RadPorMed and BaseSolver.
 
-        super().__init__(*args,**kwargs)
+        Args:
+            *args: Positional arguments for RadPorMed.
+            **kwargs: Keyword arguments for BaseSolver.
+
+        """
+        RadPorMed.__init__(self,*args)
+        BaseSolver.__init__(self,**kwargs)
 
     def __call__(self,well,pinit:float=None):
+        """
+        Prepares the Transient solver instance for execution by configuring 
+        the well and optional initial pressure.
 
+        Args:
+            well: An object representing the well to be simulated.
+            pinit (float, optional): Initial reservoir pressure. Defaults to None.
+
+        Returns:
+            Transient: Returns self to allow for method chaining or deferred execution.
+        
+        """
         self.well = well
         self.tmin = None
         self.tmax = None
@@ -77,11 +107,10 @@ class Transient(BaseSolver):
 
     def solve(self,times,nodes):
         """Solves for the pressure values at transient state."""
-        times  = self.correct(times)
-        result = Result(times,nodes)
-        expi   = special.expi(-(result._nodes**2)/(4*self._hdiff*result._times))
+        result = Result(self.correct(times),nodes)
+        expint = special.expi(-(result._nodes**2)/(4*self._hdiff*result._times))
 
-        deltap = self._pterm*(-1/2*expi+self.well._skin)
+        deltap = self._pterm*(-1/2*expint+self.well._skin)
         result._press = self._pinit-deltap
 
         return result
@@ -100,3 +129,7 @@ class Transient(BaseSolver):
         valids = np.logical_and(bound_internal,bound_external)
 
         return np.where(valids,times,np.nan)
+
+if __name__ == "__main__":
+
+    t = Transient(2,2,layer="None")

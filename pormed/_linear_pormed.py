@@ -3,7 +3,7 @@ class LinPorMed():
 
     _FT_TO_METER = 0.3048
 
-    def __init__(self,length,width,height):
+    def __init__(self,length:float,width:float,height:float,/):
         """Initialize the base reservoir class for analytical calculations.
 
         Arguments:

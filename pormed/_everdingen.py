@@ -69,7 +69,6 @@ class Everdingen():
         return res
 
     def root_function_first_derivative(self,beta):
-
         """
         it needs a treshold value of beta and two functions to calculate analytical values,
         one close to singularity \beta=0, the other at larger values of \betta

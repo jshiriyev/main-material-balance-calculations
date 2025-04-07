@@ -112,6 +112,19 @@ class PseudoSteady(BaseSolver):
         """Setter for the initial reservoir pressure."""
         self._pinit = np.ravel(value).astype(float)*6894.76
 
+    @property
+    def vpore(self):
+        """Getter for the pore volume."""
+        if not hasattr(self,"_vpore"):
+            self.vpore = None
+
+        return self._vpore/(0.3048**3)
+
+    @vpore.setter
+    def vpore(self,value):
+        """Setter for the pore volume."""
+        self._vpore = self._volume*self.layer._poro
+
     def solve(self,times,nodes):
         """Solves for the pressure values at pseudo-steady state."""
         times  = self.correct(times)

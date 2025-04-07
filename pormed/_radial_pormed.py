@@ -5,7 +5,7 @@ class RadPorMed():
 
     _FT_TO_METER = 0.3048
 
-    def __init__(self,radius,height):
+    def __init__(self,radius:float,height:float,/):
         """Initialize the base reservoir class for analytical calculations.
 
         Arguments:
@@ -65,7 +65,7 @@ class RadPorMed():
 
 if __name__ == "__main__":
 
-    res = Reservoir(1000,20)
+    res = RadPorMed(1000,20)
 
     print(res.radius)
 

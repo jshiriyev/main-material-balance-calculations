@@ -1,24 +1,22 @@
-from ._reservoir import RadialPorMed
+import logging
 
-class BaseSolver(RadialPorMed):
+class BaseSolver():
 
-	def __init__(self,*args,rrock=None,fluid=None,tcomp=None):
+	def __init__(self,*,layer=None,fluid=None,tcomp=None):
 
-		super().__init__(*args)
-
-		self.rrock = rrock
+		self.layer = layer
 		self.fluid = fluid
 		self.tcomp = tcomp
 
 	@property
-	def rrock(self):
+	def layer(self):
 		"""Getter for the reservoir rock properties."""
-		return self._rrock
+		return self._layer
 
-	@rrock.setter
-	def rrock(self,value):
+	@layer.setter
+	def layer(self,value):
 		"""Setter for the reservoir rock properties."""
-		self._rrock = value
+		self._layer = value
 
 	@property
 	def fluid(self):
@@ -40,7 +38,7 @@ class BaseSolver(RadialPorMed):
 		"""Setter for the total compressibility."""
 		if value is None:
 			try:
-				self._tcomp = self.rrock._comp+self.fluid._comp
+				self._tcomp = self.layer._comp+self.fluid._comp
 			except Exception as e:
 				logging.warning(f"Missing attribute when calculating total compressibility: {e}")
 		else:
@@ -57,18 +55,5 @@ class BaseSolver(RadialPorMed):
 	@hdiff.setter
 	def hdiff(self,value):
 		"""Setter for the hydraulic diffusivity."""
-		self._hdiff = (self.rrock._perm)/(self.rrock._poro*self.fluid._visc*self._tcomp)
-
-	@property
-	def vpore(self):
-		"""Getter for the pore volume."""
-		if not hasattr(self,"_vpore"):
-			self.vpore = None
-
-		return self._vpore/(0.3048**3)
-
-	@vpore.setter
-	def vpore(self,value):
-		"""Setter for the pore volume."""
-		self._vpore = self._volume*self.rrock._poro
+		self._hdiff = (self.layer._perm)/(self.layer._poro*self.fluid._visc*self._tcomp)
 	
