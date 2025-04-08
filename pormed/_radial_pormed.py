@@ -5,17 +5,34 @@ class RadPorMed():
 
     _FT_TO_METER = 0.3048
 
-    def __init__(self,radius:float,height:float,/):
+    def __init__(self,size:tuple,/):
         """Initialize the base reservoir class for analytical calculations.
 
         Arguments:
         ---------
-        radius (float): Radius of the reservoir in feet.
-        height (float): Height of the reservoir in feet.
+        size (float tuple): tuple of (radius, height) in feet. If only radius is provided,
+            height defaults to 1 ft.
 
         """
-        self.radius = radius
-        self.height = height
+        self.size = size
+
+    @property
+    def size(self):
+        """Getter for the reservoir size."""
+        return (self.radius, self.height)
+
+    @size.setter
+    def size(self,value):
+        """Setter for the reservoir size."""
+        if not isinstance(value, tuple):
+            raise TypeError("Size must be a tuple: (radius,) or (radius, height)")
+        if len(value) == 0 or len(value) > 2:
+            raise ValueError("Size tuple must have 1 or 2 elements")
+
+        self.radius = value[0]
+        self.height = value[1] if len(value) == 2 else 1.
+
+        self._size = (self._radius,self._height)
 
     @property
     def radius(self):
@@ -65,7 +82,10 @@ class RadPorMed():
 
 if __name__ == "__main__":
 
-    res = RadPorMed(1000,20)
+    res = RadPorMed((1000,20))
+
+    print(res.size)
+    print(res._size)
 
     print(res.radius)
 

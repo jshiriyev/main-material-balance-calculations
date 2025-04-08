@@ -4,34 +4,49 @@ import numpy as np
 
 from scipy import special
 
-from ._base_solver import BaseSolver
+from ._solver_object import SolverObj
 from ._radial_pormed import RadPorMed
 
 from ._result import Result
 
-class Transient(RadPorMed,BaseSolver):
+class TransientState(RadPorMed,SolverObj):
     """
     Transient solution of the diffusivity equation in radial coordinates using 
     the line source solution based on the exponential integral.
 
     Inherits from:
         RadPorMed: Provides radial porous media properties.
-        BaseSolver: Handles base solver configurations and behaviors.
+        SolverObj: Handles base solver configurations and behaviors.
 
     """
 
-    def __init__(self,*args,**kwargs):
+    def __init__(self,size:tuple,**kwargs):
         """
         Initializes the Transient solver by invoking the initializers of 
-        RadPorMed and BaseSolver.
+        RadPorMed and SolverObj.
 
         Args:
-            *args: Positional arguments for RadPorMed.
-            **kwargs: Keyword arguments for BaseSolver.
+            size (float tuple): porous media size for RadPorMed.
+            **kwargs: Keyword arguments for SolverObj.
 
         """
-        RadPorMed.__init__(self,*args)
-        BaseSolver.__init__(self,**kwargs)
+        RadPorMed.__init__(self,size)
+        SolverObj.__init__(self,**kwargs)
+
+        self.tmax = None
+
+    @property
+    def vpore(self):
+        """Getter for the pore volume."""
+        if not hasattr(self,"_vpore"):
+            self.vpore = None
+
+        return self._vpore/(0.3048**3)
+
+    @vpore.setter
+    def vpore(self,value):
+        """Setter for the pore volume."""
+        self._vpore = self._volume*self.layer._poro
 
     def __call__(self,well,pinit:float=None):
         """
@@ -43,14 +58,13 @@ class Transient(RadPorMed,BaseSolver):
             pinit (float, optional): Initial reservoir pressure. Defaults to None.
 
         Returns:
-            Transient: Returns self to allow for method chaining or deferred execution.
+            TransientState: Returns self to allow for method chaining or deferred execution.
         
         """
         self.well = well
         self.tmin = None
-        self.tmax = None
+        self.term = None
 
-        self.pterm = None
         self.pinit = pinit
 
         return self
@@ -86,14 +100,14 @@ class Transient(RadPorMed,BaseSolver):
         self._tmax = 0.25*self._radius**2/self._hdiff
 
     @property
-    def pterm(self):
+    def term(self):
         """Getter for the pressure term used in analytical equations."""
-        return self._pterm/6894.76
+        return self._term/6894.76
 
-    @pterm.setter
-    def pterm(self,value):
+    @term.setter
+    def term(self,value):
         """Setter for the pressure term used in analytical equations."""
-        self._pterm = (self.well._cond)/(2*np.pi*self._flow*self.fluid._mobil)
+        self._term = (self.well._cond)/(2*np.pi*self._flow*self.fluid._mobil)
 
     @property
     def pinit(self):
@@ -108,10 +122,10 @@ class Transient(RadPorMed,BaseSolver):
     def solve(self,times,nodes):
         """Solves for the pressure values at transient state."""
         result = Result(self.correct(times),nodes)
-        expint = special.expi(-(result._nodes**2)/(4*self._hdiff*result._times))
 
-        deltap = self._pterm*(-1/2*expint+self.well._skin)
-        result._press = self._pinit-deltap
+        eiterm = special.expi(-(result._nodes**2)/(4*self._hdiff*result._times))
+
+        result._press = self._pinit-self._term*(-1/2*eiterm+self.well._skin)
 
         return result
 

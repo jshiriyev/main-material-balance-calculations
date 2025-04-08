@@ -1,9 +1,15 @@
 import logging
 
-class BaseSolver():
+from respy import Layer, Fluid
 
-	def __init__(self,*,layer=None,fluid=None,tcomp=None):
+class SolverObj():
+	"""Base solver of the diffusivity equation."""
 
+	def __init__(self,*,layer:Layer=None,fluid:Fluid=None,tcomp:float=None):
+		"""Initialization with layer and fluid information, and optionally,
+		with total compressibility.
+
+		"""
 		self.layer = layer
 		self.fluid = fluid
 		self.tcomp = tcomp

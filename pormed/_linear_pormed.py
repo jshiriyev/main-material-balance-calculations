@@ -3,19 +3,35 @@ class LinPorMed():
 
     _FT_TO_METER = 0.3048
 
-    def __init__(self,length:float,width:float,height:float,/):
+    def __init__(self,size:tuple,/):
         """Initialize the base reservoir class for analytical calculations.
 
         Arguments:
         ----------
-        length (float): Length of the reservoir in feet.
-        width (float): Width of the reservoir in feet.
-        height (float): Height of the reservoir in feet.
+        size (float tuple): tuple of (length, width, height) in feet. If only length is provided,
+            width and height defaults to 1 ft.
 
         """
-        self.length = length
-        self.width  = width
-        self.height = height
+        self.size = size
+
+    @property
+    def size(self):
+        """Getter for the reservoir size."""
+        return (self.length, self.width, self.height)
+
+    @size.setter
+    def size(self,value):
+        """Setter for the reservoir size."""
+        if not isinstance(value, tuple):
+            raise TypeError("Size must be a tuple: (length,) or (length, width) or (length, width, height)")
+        if len(value) == 0 or len(value) > 3:
+            raise ValueError("Size tuple must have 1, 2 or 3 elements")
+
+        self.length = value[0]
+        self.width  = value[1] if len(value) > 1 else 1.
+        self.height = value[2] if len(value) > 2 else 1.
+
+        self._size = (self._length, self._width, self._height)
 
     @property
     def length(self):
@@ -57,7 +73,7 @@ class LinPorMed():
 
     @area.setter
     def area(self,value):
-        """Setter for the reservoir cross-sectional area parallel to flow."""
+        """Setter for the reservoir cross-sectional area whose normal is parallel to flow."""
         self._area = self._height*self._width
 
     @property
@@ -70,7 +86,7 @@ class LinPorMed():
 
     @surface.setter
     def surface(self,value):
-        """Setter for the reservoir surface area perpendicular to flow."""
+        """Setter for the reservoir surface area whose normal is perpendicular to flow."""
         self._surface = self._length*self._width
 
     @property
@@ -88,8 +104,10 @@ class LinPorMed():
 
 if __name__ == "__main__":
 
-    res = Reservoir(1000,100,20)
+    res = LinPorMed((1000,))
 
+    print(res.size)
+    print(res._size)
     print(res.length)
 
     print(res.area)

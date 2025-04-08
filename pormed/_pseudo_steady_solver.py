@@ -2,7 +2,9 @@ import logging
 
 import numpy as np
 
-from ._solver import BaseSolver
+from ._solver_object import SolverObj
+from ._radial_pormed import RadPorMed
+
 from ._result import Result
 
 @dataclass(frozen=True)
@@ -18,12 +20,16 @@ class Boundary:
     # Use infinite system solution with less than 1 % Error for lesser values
     time_infinite: float = None
 
-class PseudoSteady(BaseSolver):
+class PseudoSteadyState(RadPorMed,SolverObj):
     """Pseudo Steady State solution based on shape factors.
 
     The solver is also applicable when there are two slightly compressible fluids
     where the second one is at irreducible saturation, not mobile.
     
+    Inherits from:
+        RadPorMed: Provides radial porous media properties.
+        SolverObj: Handles base solver configurations and behaviors.
+
     """
     GAMMA = np.exp(0.5772)
 
@@ -34,17 +40,52 @@ class PseudoSteady(BaseSolver):
         "hexagon": Boundary(31.6,0.1,0.06,0.1),
         }
 
-    def __init__(self,*args,**kwargs):
-        
-        super().__init__(*args,**kwargs)
+    def __init__(self,size:tuple,**kwargs):
+        """
+        Initializes the Pseudo-State solver by invoking the initializers of 
+        RadPorMed and SolverObj.
+
+        Args:
+            size (float tuple): porous media size for RadPorMed.
+            **kwargs: Keyword arguments for SolverObj.
+
+        """
+        RadPorMed.__init__(self,size)
+        SolverObj.__init__(self,**kwargs)
+
+    @property
+    def vpore(self):
+        """Getter for the pore volume."""
+        if not hasattr(self,"_vpore"):
+            self.vpore = None
+
+        return self._vpore/(0.3048**3)
+
+    @vpore.setter
+    def vpore(self,value):
+        """Setter for the pore volume."""
+        self._vpore = self._volume*self.layer._poro
 
     def __call__(self,well,shape:str="circle",pinit:float=None):
+        """
+        Prepares the Pseudo-State solver instance for execution by configuring 
+        the well and optional shape and initial pressure.
+
+        Args:
+            well  : An object representing the well to be simulated.
+            shape : The shape of the reservoir.
+            pinit (float, optional): Initial reservoir pressure. Defaults to None.
+
+        Returns:
+            PseudoSteadyState: Returns self to allow for method chaining or deferred execution.
+        
+        """
 
         self.well  = well
         self.shape = shape
         self.tmin  = None
+        self.term  = None
 
-        self.pterm = None
         self.pinit = pinit
         
         return self
@@ -93,14 +134,14 @@ class PseudoSteady(BaseSolver):
         return (self._surface/self._hdiff)*np.asarray(values)/(24*60*60)
 
     @property
-    def pterm(self):
+    def term(self):
         """Getter for the pressure term used in analytical equations."""
-        return self._pterm/6894.76
+        return self._term/6894.76
 
-    @pterm.setter
-    def pterm(self,value):
+    @term.setter
+    def term(self,value):
         """Setter for the pressure term used in analytical equations."""
-        self._pterm = (self.well._cond)/(2*np.pi*self._flow*self.fluid._mobil)
+        self._term = (self.well._cond)/(2*np.pi*self._flow*self.fluid._mobil)
 
     @property
     def pinit(self):
@@ -112,28 +153,15 @@ class PseudoSteady(BaseSolver):
         """Setter for the initial reservoir pressure."""
         self._pinit = np.ravel(value).astype(float)*6894.76
 
-    @property
-    def vpore(self):
-        """Getter for the pore volume."""
-        if not hasattr(self,"_vpore"):
-            self.vpore = None
-
-        return self._vpore/(0.3048**3)
-
-    @vpore.setter
-    def vpore(self,value):
-        """Setter for the pore volume."""
-        self._vpore = self._volume*self.layer._poro
-
     def solve(self,times,nodes):
         """Solves for the pressure values at pseudo-steady state."""
-        times  = self.correct(times)
-        result = Result(times,nodes)
-        inner  = (4*self._surface)/(self.GAMMA*self.bound.factor*self.well._radius**2)
+        result = Result(self.correct(times),nodes)
 
-        deltap1 = self._pterm*(1/2*np.log(inner)+self.well._skin)
-        deltap2 = (self.well._cond*self.fluid._fvf)/(self._vpore*self._tcomp)*result._times
-        result._press = self._pinit-deltap1-deltap2
+        inner = (4*self._surface)/(self.GAMMA*self.bound.factor*self.well._radius**2)
+        drop1 = self._term*(1/2*np.log(inner)+self.well._skin)
+        drop2 = (self.well._cond*self.fluid._fvf)/(self._vpore*self._tcomp)*result._times
+
+        result._press = self._pinit-drop1-drop2
 
         return result
 

@@ -14,7 +14,6 @@ class OnePhase():
         ct      : total compressibility, 1/psi
 
         """
-
         self.length = length*0.3048
 
         self.eta = (k*9.869233e-16)/(phi*(ct/6894.76)*(mu*1e-3))
@@ -42,23 +41,23 @@ class OnePhase():
 
         xaxis = numpy.arange(self.length/ngrids/2,self.length,self.length/ngrids)
         
-        X = self.tondimx(xaxis,self.length)
+        X = self.x2dim(xaxis,self.length)
 
-        T = self.tondimtime(time,self.eta,self.length)
+        T = self.time2dim(time,self.eta,self.length)
         
         if not noflux: # constant downstream pressure case
 
             pright = 101325 if pright is None else pright*6894.76
 
-            ndimPresInit = self.tondimpressure(pinit,pleft,pright)
+            ndimPresInit = self.press2dim(pinit,pleft,pright)
             ndimPressure = self.solve_ndimpressure_pconst(X,T,ndimPresInit)
 
-            dimPressure = self.todimpressure(ndimPressure,pleft,pright)
+            dimPressure = self.dim2press(ndimPressure,pleft,pright)
 
             return xaxis/0.3048,dimPressure/6894.76
 
         ndimPressure = self.solve_ndimpressure_noflux(X,T)
-        dimPressure = self.todimpressure(ndimPressure,pleft,pinit)
+        dimPressure = self.dim2press(ndimPressure,pleft,pinit)
 
         return xaxis/0.3048,dimPressure/6894.76
 
@@ -117,31 +116,31 @@ class OnePhase():
         return 1-4/numpy.pi*psum
     
     @staticmethod
-    def tondimx(dimx,length):
+    def x2dim(dimx,length):
         """Converts dimensional x to non-dimensional x."""
         return dimx/length
 
     @staticmethod
-    def todimx(ndimx,length):
+    def dim2x(ndimx,length):
         """Converts non-dimensional x to dimensional x."""
         return ndimx*length
 
     @staticmethod
-    def tondimtime(dimtime,eta,length):
+    def time2dim(dimtime,eta,length):
         """Converts dimensional time to non-dimensional time."""
         return eta*dimtime/length**2
 
     @staticmethod
-    def todimtime(ndimtime,eta,length):
+    def dim2time(ndimtime,eta,length):
         """Converts non-dimensional time to dimensional time."""
         return ndimtime*length**2/eta
 
     @staticmethod
-    def tondimpressure(dimpressure,pb1,pb2):
+    def press2dim(dimpressure,pb1,pb2):
         """Converts dimensional pressure to non-dimensional pressure."""
         return (dimpressure-pb2)/(pb1-pb2)
 
     @staticmethod
-    def todimpressure(ndimpressure,pb1,pb2):
+    def dim2press(ndimpressure,pb1,pb2):
         """Converts non-dimensional pressure to dimensional pressure."""
         return ndimpressure*(pb1-pb2)+pb2
