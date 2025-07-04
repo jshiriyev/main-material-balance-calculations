@@ -1,0 +1,5 @@
+Metadata-Version: 2.1
+Name: mbal
+Version: 0.0.2
+Requires-Dist: numpy>=1.26.4
+Requires-Dist: scipy>=1.13.0
